@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suno Naa!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #ffe6f2;
+            background-repeat: repeat;
+            background-size: cover; 
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            overflow: hidden;
+            transition: background 0.8s ease;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            transition: all 0.5s ease;
+        }
+
+        .fade-out {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        .fade-in {
+            animation: fadeInScale 0.6s ease forwards;
+        }
+
+        @keyframes fadeInScale {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .message {
+            font-size: 26px;
+            color: #d63384;
+            font-weight: bold;
+            margin-bottom: 25px;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.9);
+            min-height: 60px;
+            max-width: 90vw;
+            padding: 0 10px;
+        }
+
+        .character-box {
+            position: relative;
+            width: 280px;
+            height: 250px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .bounce {
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .char-img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 15px;
+            object-fit: cover;
+        }
+
+        .floating-element {
+            position: absolute;
+            user-select: none;
+            z-index: 5;
+        }
+        .heart-bubble {
+            background: #fff;
+            border: 2px solid #ff4d88;
+            padding: 5px 8px;
+            border-radius: 15px;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: floatUp 2s infinite ease-in-out;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.9); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-35px) scale(1.1); opacity: 0; }
+        }
+
+        .burst-heart {
+            position: fixed;
+            font-size: 28px;
+            animation: burstOut 1.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 100;
+        }
+        @keyframes burstOut {
+            0% { transform: translate(0, 0) scale(0.5); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(1.5) rotate(var(--rot)); opacity: 0; }
+        }
+
+        .btn-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+            min-height: 50px;
+        }
+
+        .btn {
+            background-color: #ffffff;
+            border: 2px solid #ff4d88;
+            color: #ff4d88;
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(255, 77, 136, 0.2);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            z-index: 5;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background-color: #ff4d88;
+            color: white;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="screenContainer">
+        <div class="message" id="mainMessage">Sunno na merii pyarii rasmalaii</div>
+        
+        <div class="character-box bounce" id="charArea">
+            <div class="floating-element" style="top: -10px; left: 60px;"><div class="heart-bubble">❤️</div></div>
+            <div class="floating-element" style="top: -30px; left: 100px;"><div class="heart-bubble">💖</div></div>
+            <div class="floating-element" style="top: -5px; left: 150px;"><div class="heart-bubble">💕</div></div>
+            
+            <img id="mainImage" class="char-img" src="" alt="cute character">
+        </div>
+
+        <div class="btn-group" id="btnGroup">
+            <button class="btn" id="btn1" onclick="handlePositive()">haan bol</button>
+            <button class="btn" id="btn2" onclick="handleNegative()">nhi sunn na</button>
+        </div>
+    </div>
+
+    <script>
+        // Yahan saari images ke naam set kar diye hain
+        const myImages = {
+            background: "bg.jpg", 
+            start: "heart.jpg", 
+            sorry: "sorry.jpg",
+            angry: "Cute cats 💢💖✨.jpg",
+            kiss: "https://media.tenor.com/gUiu1zyxfzYAAAAi/bear-kiss-bear-kisses.gif", // Iska naya image nahi tha, toh purana hi rakha hai
+            bye: "bye.jpg" 
+        };
+
+        // Apply background and starting image
+        document.body.style.backgroundImage = `url('${myImages.background}')`;
+        document.getElementById('mainImage').src = myImages.start;
+
+        let currentStage = 0; 
+        let annoyingClickCount = 0;
+        const annoyingMessages = [
+            "Sunno na merii pyarii rasmalaii",
+            "Manja nah! Kitna bhav khayegi",
+            "Ak baar ar soch lo",
+            "Soch lo acche se!"
+        ];
+
+        function handleNegative() {
+            const btn2 = document.getElementById('btn2');
+
+            if (currentStage === 0) {
+                annoyingClickCount++;
+                if (annoyingClickCount < annoyingMessages.length) {
+                    updateUI(annoyingMessages[annoyingClickCount]);
+                } else {
+                    btn2.style.position = 'fixed';
+                    btn2.style.left = (Math.random() * (window.innerWidth - 150)) + 'px';
+                    btn2.style.top = (Math.random() * (window.innerHeight - 80)) + 'px';
+                }
+            } else if (currentStage === 1) {
+                btn2.style.position = 'fixed';
+                btn2.style.left = (Math.random() * (window.innerWidth - 160)) + 'px';
+                btn2.style.top = (Math.random() * (window.innerHeight - 80)) + 'px';
+            } else if (currentStage === 2) {
+                handleFinalReject();
+            }
+        }
+
+        document.getElementById('btn2').addEventListener('mouseover', function() {
+            if (currentStage === 1 || (currentStage === 0 && annoyingClickCount >= annoyingMessages.length)) {
+                this.style.position = 'fixed';
+                this.style.left = (Math.random() * (window.innerWidth - 160)) + 'px';
+                this.style.top = (Math.random() * (window.innerHeight - 80)) + 'px';
+            }
+        });
+
+        function handlePositive() {
+            const container = document.getElementById('screenContainer');
+            container.classList.add('fade-out');
+
+            setTimeout(() => {
+                if (currentStage === 0) {
+                    currentStage = 1;
+                    document.getElementById('mainMessage').innerText = "Sorryy! Mann jao naa meri pyarii rasmalii ho naa💕🌹";
+                    document.getElementById('mainImage').src = myImages.sorry;
+
+                    const btn1 = document.getElementById('btn1');
+                    const btn2 = document.getElementById('btn2');
+                    
+                    btn1.innerText = "1. Haan thik h";
+                    btn2.innerText = "2. Nhi manuu ✌";
+                    
+                    btn2.style.position = 'relative';
+                    btn2.style.left = 'auto';
+                    btn2.style.top = 'auto';
+
+                } else if (currentStage === 1) {
+                    currentStage = 2;
+                    document.getElementById('mainMessage').innerText = "hehehehe mann gye to ab forehead pr 👉👈....warna jurmana lgauga me";
+                    
+                    const btn1 = document.getElementById('btn1');
+                    const btn2 = document.getElementById('btn2');
+                    
+                    btn1.innerText = "1. Nhi";
+                    btn2.innerText = "2. haa kyu nhii 😁";
+                    
+                    btn2.style.position = 'relative';
+                    btn2.style.left = 'auto';
+                    btn2.style.top = 'auto';
+
+                    btn1.onclick = handleFinalReject;
+                    btn1.onmouseover = null; 
+                    
+                    btn2.onclick = handleFinalAccept;
+                    btn2.onmouseover = null; 
+                }
+                
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+            }, 400);
+        }
+
+        function updateUI(msg) {
+            const container = document.getElementById('screenContainer');
+            container.classList.add('fade-out');
+            setTimeout(() => {
+                document.getElementById('mainMessage').innerText = msg;
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+            }, 300);
+        }
+
+        function handleFinalReject() {
+            document.getElementById('mainMessage').innerText = "katii huhhh 😤";
+            document.getElementById('btnGroup').style.display = 'none';
+            document.getElementById('mainImage').src = myImages.angry;
+            
+            setTimeout(() => {
+                document.body.style.backgroundColor = "#000000";
+                document.body.style.backgroundImage = "none";
+                document.getElementById('screenContainer').style.display = 'none';
+            }, 2000);
+        }
+
+        function handleFinalAccept() {
+            createHeartBurst();
+            document.getElementById('mainMessage').innerText = "I love youuuu meriii pyarii rasmalaii 💙🌷";
+            document.getElementById('btnGroup').style.display = 'none';
+            
+            document.getElementById('mainImage').src = myImages.kiss;
+
+            // 5 second baad naya screen
+            setTimeout(() => {
+                const container = document.getElementById('screenContainer');
+                container.classList.add('fade-out');
+                
+                setTimeout(() => {
+                    document.getElementById('mainMessage').innerText = "Bieeee bieeee merii pyariii rasmalaii ji😁😁";
+                    document.getElementById('mainImage').src = myImages.bye; 
+                    
+                    container.classList.remove('fade-out');
+                    container.classList.add('fade-in');
+                }, 400);
+            }, 5000);
+        }
+
+        function createHeartBurst() {
+            const emojis = ['❤️', '💖', '💕', '🌹', '💙', '✨', '🥰'];
+            for (let i = 0; i < 40; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'burst-heart';
+                heart.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 80 + Math.random() * 250;
+                const dx = Math.cos(angle) * distance + 'px';
+                const dy = Math.sin(angle) * distance + 'px';
+                const rot = (Math.random() * 360) + 'deg';
+                
+                heart.style.setProperty('--dx', dx);
+                heart.style.setProperty('--dy', dy);
+                heart.style.setProperty('--rot', rot);
+                heart.style.left = (window.innerWidth / 2 - 15) + 'px';
+                heart.style.top = (window.innerHeight / 2 - 15) + 'px';
+                
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), 1500);
+            }
+        }
+    </script>
+</body>
+</html>
